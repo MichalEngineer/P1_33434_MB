@@ -1,0 +1,55 @@
+
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+PWIR_2/1_1_cr_new_thread/.vs
+
+PWIR_2/1_1_cr_new_thread/x64
+
+PWIR_2/1_1_cr_new_thread/1_1_cr_new_thread/x64
+
+PWIR_2/1_1_cr_new_thread/1_1_cr_new_thread/1_1_cr_new_thread.vcxproj
+
+PWIR_2/1_1_cr_new_thread/1_1_cr_new_thread/1_1_cr_new_thread.vcxproj.*
+PWIR_2/1_1_cr_new_thread/1_1_cr_new_thread/x64
+
+PWIR_2/2_cr_many_threads/.vs
+
+PWIR_2/2_cr_many_threads/x64
+
+PWIR_2/2_cr_many_threads/2_cr_many_threads/x64
+
+PWIR_2/2_cr_many_threads/2_cr_many_threads/2_cr_many_threads.vcxproj
+
+PWIR_2/2_cr_many_threads/2_cr_many_threads/2_cr_many_threads.vcxproj.*
+PWIR_2/2_cr_many_threads/2_cr_many_threads/x64
