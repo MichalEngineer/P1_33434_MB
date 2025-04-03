@@ -2,54 +2,66 @@
 #include <cstdlib>
 #include <time.h>
 #include <thread>
+#include <chrono>
 
-#define SIZE 40
+#define SIZE 100
+#define CHUNK 10
+#define THREAD_COUNT (SIZE / CHUNK)
 
-void add(int id, int* a, int* b, int* c){
-    c[id] = a[id] + b[id];
+void add(int id, int* a, int* b, int* c) {
+    int start = id * CHUNK;
+    int end = start + CHUNK;
+    for (int i = start; i < end; i++) {
+        c[i] = a[i] + b[i];
+    }
 }
 
-int main(){
+int main() {
     srand(time(NULL));
     int a[SIZE];
     int b[SIZE];
     int c[SIZE];
 
-    for(int i = 0;i<SIZE;i++){
-        a[i] = rand() % 100 + 1; //1 do 100
+    for (int i = 0; i < SIZE; i++) {
+        a[i] = rand() % 100 + 1; 
         b[i] = rand() % 100 + 1;
     }
 
-    //wypisanie na ekranie A
-    for(int i = 0;i<SIZE;i++){
+    for (int i = 0; i < SIZE; i++) {
         printf("%u ", a[i]);
     }
     printf("\n");
 
-    //wypisanie na ekranie B
-    for(int i = 0;i<SIZE;i++){
+    for (int i = 0; i < SIZE; i++) {
         printf("%u ", b[i]);
     }
     printf("\n");
 
-    std::thread** threads = new std::thread*[SIZE];
-    for(int i = 0;i<SIZE;i++){
-        threads[i] = new std::thread(add, i, a, b, c); //wykorzystuje i jako id danego wątku
+    std::thread* threads[THREAD_COUNT];
+
+    auto start = std::chrono::high_resolution_clock::now();
+
+    for (int i = 0; i < THREAD_COUNT; i++) {
+        threads[i] = new std::thread(add, i, a, b, c);
     }
 
-    for(int i = 0;i<SIZE;i++){
+    for (int i = 0; i < THREAD_COUNT; i++) {
         threads[i]->join();
     }
 
-    for(int i = 0;i<SIZE;i++){
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+
+    for (int i = 0; i < THREAD_COUNT; i++) {
         delete threads[i];
     }
-    delete[] threads;
 
-    //wypisanie na ekranie C
-    for(int i = 0;i<SIZE;i++){
+    for (int i = 0; i < SIZE; i++) {
         printf("%u ", c[i]);
     }
+    printf("\n");
+
+    printf("Czas wykonania operacji dodawania: %f sekundy\n", elapsed.count());
 
     return 0;
 }

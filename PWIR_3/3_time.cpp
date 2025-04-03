@@ -1,14 +1,24 @@
 #include <chrono>
 #include <cstdio>
-#include <windows.h>
 
-int main(){
-    auto start = std::chrono::steady_clock::now();
-    //długie operacje
-    Sleep(2000);
-    auto end = std::chrono::steady_clock::now();
+void fibonacci(int n) {
+    long long a = 0, b = 1, temp;
+    for (int i = 0; i < n; i++) {
+        printf("%lld ", a);
+        temp = a + b;
+        a = b;
+        b = temp;
+    }
+    printf("\n");
+}
 
-    printf("Czas trwania: %llu\n", std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count());
+int main() {
+    auto start_fib = std::chrono::steady_clock::now();
+    fibonacci(40);
+    auto end_fib = std::chrono::steady_clock::now();
+
+    printf("Czas generowania Fibonacciego: %llu µs\n",
+        std::chrono::duration_cast<std::chrono::microseconds>(end_fib - start_fib).count());
 
     return 0;
 }
