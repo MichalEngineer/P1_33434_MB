@@ -1,0 +1,3 @@
+﻿  MPI_HELLOWORLD.cpp
+C:\Users\Użytkownik\Desktop\1\PWIR_11\MPI_HELLOWORLD\MPI_HELLOWORLD.cpp(8,15): warning C4244: "argument": konwersja z "time_t" do "unsigned int", możliwa utrata danych
+  MPI_HELLOWORLD.vcxproj -> C:\Users\Użytkownik\Desktop\1\PWIR_11\x64\Debug\MPI_HELLOWORLD.exe
