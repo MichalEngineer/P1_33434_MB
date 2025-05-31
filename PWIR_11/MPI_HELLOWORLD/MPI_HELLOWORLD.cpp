@@ -1,167 +1,71 @@
 #include "mpi.h"
-#include <cstdio>
 #include <iostream>
-#include <time.h>
-#include <vector>
+#include <cmath>
+#include <iomanip> // do precyzyjnego formatowania
 
-void mainProcess(int size) {
-    srand(time(NULL));
+const double PI = 3.14159265358979323846;
 
-    // Pobieranie rozmiaru wektorów od u¿ytkownika
-    int vectorSize = 0;
-    std::cout << "Podaj rozmiar wektorów: ";
-    std::cin >> vectorSize;
-
-    if (vectorSize <= 0) {
-        std::cout << "Nieprawid³owy rozmiar wektora. Ustawiam domyœlny rozmiar 10.\n";
-        vectorSize = 10;
-    }
-
-    // Obliczanie ile elementów przypada na ka¿dy proces
-    std::vector<int> elementsPerProcess(size);
-    std::vector<int> startIndices(size);
-
-    // Podstawowy przydzia³ (minimalna liczba elementów dla ka¿dego procesu)
-    int baseElements = vectorSize / (size - 1);
-    int remainingElements = vectorSize % (size - 1);
-
-    // Proces g³ówny (0) nie wykonuje obliczeñ
-    elementsPerProcess[0] = 0;
-    startIndices[0] = 0;
-
-    // Przydzielanie elementów dla procesów roboczych (1 do size-1)
-    for (int i = 1; i < size; i++) {
-        elementsPerProcess[i] = baseElements;
-        if (i <= remainingElements) {
-            elementsPerProcess[i]++;
-        }
-
-        // Obliczanie indeksu pocz¹tkowego dla ka¿dego procesu
-        if (i == 1) {
-            startIndices[i] = 0;
-        }
-        else {
-            startIndices[i] = startIndices[i - 1] + elementsPerProcess[i - 1];
-        }
-    }
-
-    // Alokujemy wektory o rozmiarze podanym przez u¿ytkownika
-    unsigned int* va = new unsigned int[vectorSize];
-    unsigned int* vb = new unsigned int[vectorSize];
-    unsigned int* vc = new unsigned int[vectorSize];
-
-    // Wype³niamy a i b losowymi danymi, a vc zerujemy
-    for (int i = 0; i < vectorSize; i++) {
-        va[i] = rand() % 10;
-        vb[i] = rand() % 10;
-        vc[i] = 0;
-    }
-
-    // Wysy³amy informacje o rozmiarze wektora do wszystkich procesów
-    MPI_Bcast(&vectorSize, 1, MPI_INT, 0, MPI_COMM_WORLD);
-
-    // Wysy³amy tablice z informacj¹ o liczbie elementów dla ka¿dego procesu
-    MPI_Bcast(elementsPerProcess.data(), size, MPI_INT, 0, MPI_COMM_WORLD);
-
-    // Wysy³amy tablice z indeksami pocz¹tkowymi dla ka¿dego procesu
-    MPI_Bcast(startIndices.data(), size, MPI_INT, 0, MPI_COMM_WORLD);
-
-    // Broadcastujemy wektor a do pozosta³ych procesów
-    MPI_Bcast(va, vectorSize, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
-
-    // Broadcastujemy wektor b do pozosta³ych procesów
-    MPI_Bcast(vb, vectorSize, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
-
-    // Odbieramy wyniki od procesów roboczych
-    MPI_Request* requests = new MPI_Request[size - 1];
-    MPI_Status* statuses = new MPI_Status[size - 1];
-
-    for (int i = 1; i < size; i++) {
-        MPI_Irecv(vc + startIndices[i], elementsPerProcess[i], MPI_UNSIGNED, i, 0, MPI_COMM_WORLD, &requests[i - 1]);
-    }
-
-    MPI_Waitall(size - 1, requests, statuses);
-
-    // Wypisujemy wyniki
-    std::cout << "Wektor A: ";
-    for (int i = 0; i < vectorSize; i++) std::cout << va[i] << " ";
-    std::cout << "\n";
-
-    std::cout << "Wektor B: ";
-    for (int i = 0; i < vectorSize; i++) std::cout << vb[i] << " ";
-    std::cout << "\n";
-
-    std::cout << "Wynik (A+B): ";
-    for (int i = 0; i < vectorSize; i++) std::cout << vc[i] << " ";
-    std::cout << "\n";
-
-    // Zwalniamy pamiêæ
-    delete[] va;
-    delete[] vb;
-    delete[] vc;
-    delete[] requests;
-    delete[] statuses;
+// Funkcja do ca³kowania: f(x) = sin(x)
+double f(double x) {
+    return sin(x);
 }
 
-void workerProcess(int id, int size) {
-    // Odbieramy rozmiar wektorów
-    int vectorSize;
-    MPI_Bcast(&vectorSize, 1, MPI_INT, 0, MPI_COMM_WORLD);
+int main(int argc, char** argv) {
+    int rank, size;
+    double a = 0.0;         // dolna granica ca³kowania
+    double b = PI;          // górna granica ca³kowania 
+    int n = 1000000;        // liczba prostok¹tów
+    double h = (b - a) / n; // szerokoœæ prostok¹ta
+    double local_sum = 0.0; // suma czêœciowa dla procesu
+    double total_sum = 0.0; // suma ca³kowita
 
-    // Odbieramy informacje o liczbie elementów dla ka¿dego procesu
-    std::vector<int> elementsPerProcess(size);
-    MPI_Bcast(elementsPerProcess.data(), size, MPI_INT, 0, MPI_COMM_WORLD);
+    // Inicjalizacja MPI
+    MPI_Init(&argc, &argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-    // Odbieramy informacje o indeksach pocz¹tkowych
-    std::vector<int> startIndices(size);
-    MPI_Bcast(startIndices.data(), size, MPI_INT, 0, MPI_COMM_WORLD);
+    // Obliczanie liczby prostok¹tów przypadaj¹cych na jeden proces
+    int local_n = n / size;
+    int remainder = n % size;
 
-    // Alokujemy bufory na moj¹ czêœæ zadania
-    int myElements = elementsPerProcess[id];
-    unsigned int* myResult = new unsigned int[myElements];
+    // Obliczanie zakresu dla ka¿dego procesu
+    int start_i = rank * local_n;
+    if (rank < remainder) {
+        local_n++;
+        start_i += rank;
+    }
+    else {
+        start_i += remainder;
+    }
+    int end_i = start_i + local_n;
 
-    // Alokujemy miejsce na wektory a oraz b
-    unsigned int* va = new unsigned int[vectorSize];
-    unsigned int* vb = new unsigned int[vectorSize];
+    // Pomiar czasu
+    double start_time = MPI_Wtime();
 
-    // Nas³uchujemy bcasta wektora a
-    MPI_Bcast(va, vectorSize, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
-
-    // Nas³uchujemy bcasta wektora b
-    MPI_Bcast(vb, vectorSize, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
-
-    // Liczymy sumê dla naszego fragmentu
-    int startIndex = startIndices[id];
-    for (int i = 0; i < myElements; i++) {
-        myResult[i] = va[startIndex + i] + vb[startIndex + i];
+    // Obliczanie sumy czêœciowej
+    for (int i = start_i; i < end_i; i++) {
+        double x = a + i * h;
+        local_sum += f(x) * h;
     }
 
-    // Odsy³amy wynik
-    MPI_Send(myResult, myElements, MPI_UNSIGNED, 0, 0, MPI_COMM_WORLD);
+    // Redukcja - sumowanie wszystkich czêœciowych wyników
+    MPI_Reduce(&local_sum, &total_sum, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 
-    // Zwalniamy pamiêæ
-    delete[] myResult;
-    delete[] va;
-    delete[] vb;
-}
+    // Pomiar czasu zakoñczenia
+    double end_time = MPI_Wtime();
+    double duration = end_time - start_time;
 
-int main()
-{
-    int PID, PCOUNT;
+    // Proces g³ówny wyœwietla wynik
+    if (rank == 0) {
+        // Ustawienie wiêkszej precyzji wyœwietlania
+        std::cout << std::setprecision(15) << std::fixed;
 
-    MPI_Init(NULL, NULL);
-
-    MPI_Comm_rank(MPI_COMM_WORLD, &PID);
-    MPI_Comm_size(MPI_COMM_WORLD, &PCOUNT);
-
-    if (PID == 0) { // Jestem procesem g³ównym
-        mainProcess(PCOUNT);
-    }
-    else { // Jestem procesem roboczym
-        workerProcess(PID, PCOUNT);
+        std::cout << "Przyblizona wartosc calki: " << total_sum << std::endl;
+        std::cout << "Dokladna wartosc calki sin(x) od 0 do PI: 2.000000000000000" << std::endl;
+        std::cout << "Blad: " << std::abs(total_sum - 2.0) << std::endl;
+        std::cout << "Czas wykonania: " << duration << " sekundy" << std::endl;
     }
 
     MPI_Finalize();
-
     return 0;
 }
