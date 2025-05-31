@@ -17,23 +17,19 @@ uint16_t* result;
 
 int main() {
     srand(static_cast<unsigned int>(time(nullptr))); // Poprawka C4244: konwersja z time_t do unsigned int
-
-    // Sprawdzenie, czy rozmiar wektora == szerokość macierzy
     assert(MATRIX_W == VECTOR_S);
 
-    // Alokacja pamięci
     matrix = new uint16_t * [MATRIX_H];
     for (int i = 0; i < MATRIX_H; i++)
         matrix[i] = new uint16_t[MATRIX_W];
 
     vector = new uint16_t[VECTOR_S];
-    result = new uint16_t[MATRIX_H]; // Poprawka: rozmiar result powinien być równy MATRIX_H
+    result = new uint16_t[MATRIX_H]; 
 
-    // Wersja sekwencyjna
     auto seq_total_start = std::chrono::high_resolution_clock::now();
 
     for (int iter = 0; iter < ITERATIONS; iter++) {
-        // Wypełnianie danych - sekwencyjnie
+
         auto start = std::chrono::high_resolution_clock::now();
         for (int i = 0; i < MATRIX_H; i++) {
             for (int k = 0; k < MATRIX_W; k++) {
@@ -51,7 +47,6 @@ int main() {
         printf("Iteracja %d: Wypelnienie sekwencyjne w %lld ms\n",
             iter + 1, std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count());
 
-        // Mnożenie macierzy - sekwencyjnie
         start = std::chrono::high_resolution_clock::now();
         for (int i = 0; i < MATRIX_H; i++) {
             for (int k = 0; k < MATRIX_W; k++) {
@@ -67,11 +62,9 @@ int main() {
     printf("\nCalkowity czas sekwencyjny dla %d iteracji: %lld ms\n\n", ITERATIONS,
         std::chrono::duration_cast<std::chrono::milliseconds>(seq_total_end - seq_total_start).count());
 
-    // Wersja równoległa
     auto par_total_start = std::chrono::high_resolution_clock::now();
 
     for (int iter = 0; iter < ITERATIONS; iter++) {
-        // Wypełnianie danych - równolegle
         auto start = std::chrono::high_resolution_clock::now();
 #pragma omp parallel for num_threads(4) shared(matrix)
         for (int i = 0; i < MATRIX_H; i++) {
@@ -92,7 +85,6 @@ int main() {
         printf("Iteracja %d: Wypelnienie rownolegle w %lld ms\n",
             iter + 1, std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count());
 
-        // Mnożenie macierzy - równolegle
         start = std::chrono::high_resolution_clock::now();
 #pragma omp parallel for num_threads(4) shared(matrix, vector, result)
         for (int i = 0; i < MATRIX_H; i++) {
@@ -109,12 +101,10 @@ int main() {
     printf("\nCalkowity czas rownolegly dla %d iteracji: %lld ms\n", ITERATIONS,
         std::chrono::duration_cast<std::chrono::milliseconds>(par_total_end - par_total_start).count());
 
-    // Obliczenie przyspieszenia
     double seq_time = static_cast<double>(std::chrono::duration_cast<std::chrono::milliseconds>(seq_total_end - seq_total_start).count());
     double par_time = static_cast<double>(std::chrono::duration_cast<std::chrono::milliseconds>(par_total_end - par_total_start).count());
     printf("\nPrzyspieszenie: %.2fx\n", seq_time / par_time);
 
-    // Zwolnienie pamięci
     delete[] vector;
     delete[] result;
 
